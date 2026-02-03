@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEO Monthly Dashboard</title>
+    <style>
+        :root {
+            --primary: #0077B6;
+            --primary-dark: #023E8A;
+            --primary-light: #00B4D8;
+            --accent: #90E0EF;
+            --accent-light: #CAF0F8;
+            --white: #FFFFFF;
+            --gray: #F8FAFC;
+            --gray-medium: #E2E8F0;
+            --gray-dark: #64748B;
+            --text: #1E293B;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--primary-dark);
+            padding: 12px 24px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+            flex-wrap: wrap;
+        }
+
+        .nav button {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav button:hover { background: rgba(255,255,255,0.2); }
+        .nav button.active { background: var(--primary-light); }
+
+        .page {
+            display: none;
+            max-width: 1100px;
+            margin: 70px auto 40px;
+            padding: 24px;
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .page.active { display: block; }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            color: var(--white);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header h1 { font-size: 24px; font-weight: 700; }
+        .header p { font-size: 13px; opacity: 0.9; }
+
+        .header-stat {
+            background: rgba(255,255,255,0.15);
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-align: right;
+        }
+
+        .header-stat .label { font-size: 11px; opacity: 0.9; }
+        .header-stat .value { font-size: 28px; font-weight: 700; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px 0 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--accent-light);
+        }
+
+        .section-icon {
+            background: var(--primary);
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-icon svg { width: 20px; height: 20px; }
+        .section-header h2 { font-size: 18px; font-weight: 700; }
+        .section-header .subtitle { font-size: 12px; color: var(--gray-dark); }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,119,182,0.08);
+            border: 1px solid var(--gray-medium);
+        }
+
+        .metric-card .title { font-size: 11px; color: var(--gray-dark); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-card .value { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+        .metric-card .change { font-size: 11px; display: flex; align-items: center; gap: 4px; }
+        .metric-card .change.up { color: var(--success); }
+        .metric-card .change.down { color: var(--danger); }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) { .two-column { grid-template-columns: 1fr; } }
+
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--gray-medium);
+        }
+
+        .card h3 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        thead tr { background: var(--primary); }
+        th {
+            padding: 10px 12px;
+            text-align: left;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:nth-child(even) { background: var(--gray); }
+        td { padding: 10px 12px; color: var(--text); border-bottom: 1px solid var(--gray-medium); }
+
+        .status-badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-green { background: #D1FAE5; color: #059669; }
+        .status-yellow { background: #FEF3C7; color: #D97706; }
+        .status-red { background: #FEE2E2; color: #DC2626; }
+
+        .traffic-light-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+        }
+
+        .traffic-light-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: var(--gray);
+            border-radius: 8px;
+        }
+
+        .traffic-light-item .area { font-weight: 600; font-size: 13px; }
+        .traffic-light-item .note { font-size: 11px; color: var(--gray-dark); }
+
+        .commentary-box {
+            background: var(--accent-light);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .commentary-box h3 { font-size: 14px; font-weight: 600; color: var(--primary-dark); margin-bottom: 10px; }
+        .commentary-box p { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--gray);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .indicator { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 8px; }
+        .indicator.green { background: var(--success); }
+        .indicator.yellow { background: var(--warning); }
+        .indicator.red { background: var(--danger); }
+
+        .stat-box { text-align: center; padding: 14px; background: var(--gray); border-radius: 10px; }
+        .stat-box .value { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .stat-box .label { font-size: 11px; color: var(--gray-dark); margin-top: 4px; }
+
+        .donut-container { display: flex; align-items: center; justify-content: space-around; margin-bottom: 16px; }
+        .donut-stats { display: flex; flex-direction: column; gap: 10px; }
+        .donut-stats .label { font-size: 11px; color: var(--gray-dark); }
+        .donut-stats .value { font-size: 18px; font-weight: 700; color: var(--text); }
+        .donut-stats .value.primary { color: var(--primary); }
+
+        .key-ratios {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: var(--white);
+            margin-top: 24px;
+        }
+
+        .key-ratios h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+
+        .ratios-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .ratio-card { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 14px; }
+        .ratio-card .value { font-size: 18px; font-weight: 700; }
+        .ratio-card .metric { font-size: 12px; font-weight: 600; margin-top: 4px; }
+        .ratio-card .note { font-size: 10px; opacity: 0.8; margin-top: 4px; }
+
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .equipment-item { padding: 14px; background: var(--gray); border-radius: 8px; text-align: center; }
+        .equipment-item .name { font-size: 12px; font-weight: 600; color: var(--text); margin-top: 6px; }
+        .equipment-item .status { font-size: 10px; color: var(--gray-dark); margin-top: 2px; }
+
+        .lt-pay-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+            padding: 10px;
+            background: var(--accent-light);
+            border-radius: 8px;
+        }
+
+        .lt-pay-stat { text-align: center; }
+        .lt-pay-stat .label { font-size: 10px; color: var(--gray-dark); }
+        .lt-pay-stat .value { font-size: 14px; font-weight: 700; color: var(--primary); }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <button class="active" onclick="showPage(1)">Executive Summary</button>
+        <button onclick="showPage(2)">Fuel Operations</button>
+        <button onclick="showPage(3)">Convenience Store</button>
+        <button onclick="showPage(4)">Financial Deep Dive</button>
+        <button onclick="showPage(5)">People & Operations</button>
+    </nav>
+
+    <!-- PAGE 1: EXECUTIVE SUMMARY -->
+    <div class="page active" id="page1">
+        <div class="header">
+            <div>
+                <h1>CEO Monthly Dashboard</h1>
+                <p>Reporting Period: [Month Year] • Board Meeting: [Date]</p>
+            </div>
+            <div class="header-stat">
+                <div class="label">Days Cash on Hand</div>
+                <div class="value">45</div>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="title">Total Revenue</div><div class="value">$___</div><div class="change up">↑ +5.2% vs last month</div></div>
+            <div class="metric-card"><div class="title">Gross Profit</div><div class="value">$___</div><div class="change up">↑ +3.8% vs last month</div></div>
+            <div class="metric-card"><div class="title">Net Operating Income</div><div class="value">$___</div><div class="change down">↓ -2.1% vs budget</div></div>
+            <div class="metric-card"><div class="title">Cash on Hand</div><div class="value">$___</div><div class="change up">↑ +8.5% vs last month</div></div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="title">Fuel Volume (L)</div><div class="value">___</div><div class="change up">↑ +2.3% vs budget</div></div>
+            <div class="metric-card"><div class="title">Fuel Margin (¢/L)</div><div class="value">___</div><div class="change down">↓ -0.5¢ vs last month</div></div>
+            <div class="metric-card"><div class="title">C-Store Revenue</div><div class="value">$___</div><div class="change up">↑ +4.1% vs last month</div></div>
+            <div class="metric-card"><div class="title">Customer Count</div><div class="value">___</div><div class="change up">↑ +1.8% vs last month</div></div>
+        </div>
+
+        <div class="section-header">
+            <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            <div><h2>Traffic Light Summary</h2><div class="subtitle">Quick visual status on key areas</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="traffic-light-grid">
+                <div class="traffic-light-item"><div><div class="area">Cash Position</div><div class="note">Above target threshold</div></div><span class="status-badge status-green">On Track</span></div>
+                <div class="traffic-light-item"><div><div class="area">Fuel Margins</div><div class="note">Slight compression - monitor</div></div><span class="status-badge status-yellow">Watch</span></div>
+                <div class="traffic-light-item"><div><div class="area">C-Store Performance</div><div class="note">Meeting targets</div></div><span class="status-badge status-green">On Track</span></div>
+                <div class="traffic-light-item"><div><div class="area">Staffing & Labor</div><div class="note">Fully staffed</div></div><span class="status-badge status-green">On Track</span></div>
+                <div class="traffic-light-item"><div><div class="area">Compliance</div><div class="note">All current</div></div><span class="status-badge status-green">On Track</span></div>
+                <div class="traffic-light-item"><div><div class="area">Strategic Initiatives</div><div class="note">LT Pay on schedule</div></div><span class="status-badge status-yellow">Watch</span></div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <div><h2>Issues Requiring Board Attention</h2></div>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead><tr><th>Issue</th><th>Impact</th><th>Recommended Action</th><th>Decision</th></tr></thead>
+                <tbody>
+                    <tr><td>[Issue description]</td><td>[Impact level]</td><td>[Action to take]</td><td>Yes / No</td></tr>
+                    <tr><td>[Issue description]</td><td>[Impact level]</td><td>[Action to take]</td><td>Yes / No</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="commentary-box">
+            <h3>CEO Commentary</h3>
+            <p>[Write your narrative here. What happened this month, what mattered most, and what's next. Be direct about what the board should know.]</p>
+        </div>
+    </div>
+
+    <!-- PAGE 2: FUEL OPERATIONS -->
+    <div class="page" id="page2">
+        <div class="section-header">
+            <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg></div>
+            <div><h2>Fuel Operations</h2><div class="subtitle">Volume, Revenue & Margin Analysis</div></div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="title">Total Liters Sold</div><div class="value">___</div><div class="change up">↑ +3.2% vs last month</div></div>
+            <div class="metric-card"><div class="title">Fuel Revenue</div><div class="value">$___</div><div class="change up">↑ +2.8% vs budget</div></div>
+            <div class="metric-card"><div class="title">Avg Margin (¢/L)</div><div class="value">___</div><div class="change down">↓ -0.3¢ vs target</div></div>
+            <div class="metric-card"><div class="title">Gross Fuel Profit</div><div class="value">$___</div><div class="change up">↑ +1.5% vs last month</div></div>
+        </div>
+
+        <div class="two-column">
+            <div class="card"><h3>Volume by Fuel Type</h3>
+                <table><thead><tr><th>Type</th><th>This Month</th><th>Last Month</th><th>Δ%</th><th>Budget</th></tr></thead>
+                <tbody><tr><td>Regular</td><td>___</td><td>___</td><td>__%</td><td>___</td></tr><tr><td>Premium</td><td>___</td><td>___</td><td>__%</td><td>___</td></tr><tr><td>Diesel</td><td>___</td><td>___</td><td>__%</td><td>___</td></tr></tbody></table>
+            </div>
+            <div class="card"><h3>Margin by Fuel Type</h3>
+                <table><thead><tr><th>Type</th><th>This Month</th><th>Last Month</th><th>Δ</th><th>Target</th></tr></thead>
+                <tbody><tr><td>Regular</td><td>___¢</td><td>___¢</td><td>___¢</td><td>___¢</td></tr><tr><td>Premium</td><td>___¢</td><td>___¢</td><td>___¢</td><td>___¢</td></tr><tr><td>Diesel</td><td>___¢</td><td>___¢</td><td>___¢</td><td>___¢</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="card"><h3>Competitive Positioning</h3>
+                <table><thead><tr><th>Competitor</th><th>Their Price</th><th>Our Price</th><th>Δ</th></tr></thead>
+                <tbody><tr><td>[Competitor 1]</td><td>$___</td><td>$___</td><td>___¢</td></tr><tr><td>[Competitor 2]</td><td>$___</td><td>$___</td><td>___¢</td></tr><tr><td>[Competitor 3]</td><td>$___</td><td>$___</td><td>___¢</td></tr></tbody></table>
+            </div>
+            <div class="card"><h3>Tax Advantage Utilization</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"><div class="stat-box"><div class="value">___%</div><div class="label">Tax-Exempt Volume</div></div><div class="stat-box"><div class="value" style="color: var(--success);">$___</div><div class="label">Est. Tax Savings</div></div></div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="card"><h3>Supply & Inventory Status</h3>
+                <div class="stat-row"><span>Tank Levels</span><span>__% capacity <span class="indicator green"></span></span></div>
+                <div class="stat-row"><span>Days of Inventory</span><span>___ days <span class="indicator green"></span></span></div>
+                <div class="stat-row"><span>Supplier On-Time</span><span>___% <span class="indicator green"></span></span></div>
+                <div class="stat-row"><span>Landed Cost Trend</span><span>→ Stable <span class="indicator yellow"></span></span></div>
+                <div class="stat-row"><span>Supply Risks</span><span>None <span class="indicator green"></span></span></div>
+            </div>
+            <div class="card"><h3>Shrinkage & Loss</h3>
+                <table><thead><tr><th>Metric</th><th>This Month</th><th>Last Month</th><th>Target</th></tr></thead>
+                <tbody><tr><td>Volume Variance (L)</td><td>___</td><td>___</td><td></td></tr><tr><td>Variance %</td><td>___%</td><td>___%</td><td>&lt; ___%</td></tr><tr><td>Drive-Offs Count</td><td>___</td><td>___</td><td></td></tr><tr><td>Drive-Off Value</td><td>$___</td><td>$___</td><td></td></tr></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 3: CONVENIENCE STORE -->
+    <div class="page" id="page3">
+        <div class="section-header">
+            <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path d="M9 22V12h6v10"/></svg></div>
+            <div><h2>Convenience Store Operations</h2><div class="subtitle">Sales, Inventory & Category Performance</div></div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card"><div class="title">C-Store Revenue</div><div class="value">$___</div><div class="change up">↑ +4.1% vs last month</div></div>
+            <div class="metric-card"><div class="title">Transactions</div><div class="value">___</div><div class="change up">↑ +2.8% vs last month</div></div>
+            <div class="metric-card"><div class="title">Avg Basket Size</div><div class="value">$___</div><div class="change up">↑ +1.2% vs budget</div></div>
+            <div class="metric-card"><div class="title">Revenue/Sq Ft</div><div class="value">$___</div><div class="change up">↑ +3.5% vs target</div></div>
+            <div class="metric-card"><div class="title">Gross Margin</div><div class="value">__%</div><div class="change up">↑ +0.5pts vs last month</div></div>
+        </div>
+
+        <div class="two-column">
+            <div class="card"><h3>Fuel-to-Store Conversion</h3>
+                <div class="donut-container">
+                    <svg width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#E2E8F0" stroke-width="8"/><circle cx="50" cy="50" r="40" fill="none" stroke="#0077B6" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="163" transform="rotate(-90 50 50)" stroke-linecap="round"/><text x="50" y="55" text-anchor="middle" font-size="18" font-weight="700" fill="#1E293B">35%</text></svg>
+                    <div class="donut-stats"><div><div class="label">Fuel Customers</div><div class="value">___</div></div><div><div class="label">Fuel + C-Store</div><div class="value primary">___</div></div><div><div class="label">Avg Spend</div><div class="value">$___</div></div></div>
+                </div>
+            </div>
+            <div class="card"><h3>Inventory Health</h3>
+                <table><thead><tr><th>Metric</th><th>This Month</th><th>Last Month</th><th>Target</th></tr></thead>
+                <tbody><tr><td>Inventory Value</td><td>$___</td><td>$___</td><td>$___</td></tr><tr><td>Turnover</td><td>___x</td><td>___x</td><td>___x</td></tr><tr><td>Days of Inventory</td><td>___</td><td>___</td><td>___</td></tr><tr><td>Stock-Outs</td><td>___</td><td>___</td><td>0</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;"><h3>Category Performance</h3>
+            <table><thead><tr><th>Category</th><th>Revenue</th><th>% of Total</th><th>Margin %</th><th>Δ MoM</th></tr></thead>
+            <tbody><tr><td>Tobacco</td><td>$___</td><td>___%</td><td>___%</td><td>___%</td></tr><tr><td>Beverages</td><td>$___</td><td>___%</td><td>___%</td><td>___%</td></tr><tr><td>Snacks/Confection</td><td>$___</td><td>___%</td><td>___%</td><td>___%</td></tr><tr><td>Lottery/Gaming</td><td>$___</td><td>___%</td><td>___%</td><td>___%</td></tr><tr><td>Food Service</td><td>$___</td><td>___%</td><td>___%</td><td>___%</td></tr><tr><td>General Merchandise</td><td>$___</td><td>___%</td><td>___%</td><td>___%</td></tr><tr style="font-weight: bold; background: var(--accent-light);"><td>TOTAL</td><td>$___</td><td>100%</td><td>___%</td><td>___%</td></tr></tbody></table>
+        </div>
+
+        <div class="two-column">
+            <div class="card"><h3>Top 5 SKUs by Revenue</h3>
+                <table><thead><tr><th>#</th><th>Product</th><th>Units</th><th>Revenue</th></tr></thead>
+                <tbody><tr><td>1</td><td>[Product]</td><td>___</td><td>$___</td></tr><tr><td>2</td><td>[Product]</td><td>___</td><td>$___</td></tr><tr><td>3</td><td>[Product]</td><td>___</td><td>$___</td></tr><tr><td>4</td><td>[Product]</td><td>___</td><td>$___</td></tr><tr><td>5</td><td>[Product]</td><td>___</td><td>$___</td></tr></tbody></table>
+            </div>
+            <div class="card"><h3>Bottom 5 SKUs (Review)</h3>
+                <table><thead><tr><th>Product</th><th>Units</th><th>Days</th><th>Action</th></tr></thead>
+                <tbody><tr><td>[Product]</td><td>___</td><td>___</td><td>[Rec]</td></tr><tr><td>[Product]</td><td>___</td><td>___</td><td>[Rec]</td></tr><tr><td>[Product]</td><td>___</td><td>___</td><td>[Rec]</td></tr><tr><td>[Product]</td><td>___</td><td>___</td><td>[Rec]</td></tr><tr><td>[Product]</td><td>___</td><td>___</td><td>[Rec]</td></tr></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 4: FINANCIAL DEEP DIVE -->
+    <div class="page" id="page4">
+        <div class="section-header">
+            <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+            <div><h2>Financial Deep Dive</h2><div class="subtitle">Income Statement, Cash Flow & Working Capital</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;"><h3>Income Statement Summary</h3>
+            <table><thead><tr><th>Line Item</th><th>This Month</th><th>% Rev</th><th>Last Month</th><th>Budget</th><th>Δ</th></tr></thead>
+            <tbody>
+                <tr><td>Fuel Revenue</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td>___%</td></tr>
+                <tr><td>C-Store Revenue</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td>___%</td></tr>
+                <tr><td>Other Revenue</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td>___%</td></tr>
+                <tr style="font-weight: bold; background: var(--accent-light);"><td>TOTAL REVENUE</td><td>$___</td><td>100%</td><td>$___</td><td>$___</td><td>___%</td></tr>
+                <tr><td>Fuel COGS</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td></td></tr>
+                <tr><td>C-Store COGS</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td></td></tr>
+                <tr style="font-weight: bold; background: var(--accent-light);"><td>GROSS PROFIT</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td>___%</td></tr>
+                <tr><td>Labor</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td></td></tr>
+                <tr><td>Rent/Lease</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td></td></tr>
+                <tr><td>Utilities</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td></td></tr>
+                <tr><td>Insurance</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td></td></tr>
+                <tr><td>Repairs & Maintenance</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td></td></tr>
+                <tr><td>Other OpEx</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td></td></tr>
+                <tr style="font-weight: bold;"><td>TOTAL OPEX</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td>___%</td></tr>
+                <tr style="font-weight: bold; background: var(--primary); color: white;"><td>NET OPERATING INCOME</td><td>$___</td><td>___%</td><td>$___</td><td>$___</td><td>___%</td></tr>
+            </tbody></table>
+        </div>
+
+        <div class="two-column">
+            <div class="card"><h3>Cash Flow Summary</h3>
+                <table><thead><tr><th>Item</th><th>This Month</th><th>Last Month</th></tr></thead>
+                <tbody><tr><td>Opening Cash</td><td>$___</td><td>$___</td></tr><tr><td>+ Operating Cash Flow</td><td>$___</td><td>$___</td></tr><tr><td>- Capital Expenditures</td><td>$___</td><td>$___</td></tr><tr><td>- Debt Payments</td><td>$___</td><td>$___</td></tr><tr><td>- Distributions</td><td>$___</td><td>$___</td></tr><tr style="font-weight: bold;"><td>Closing Cash</td><td>$___</td><td>$___</td></tr><tr style="font-weight: bold; color: var(--primary);"><td>Days Cash on Hand</td><td>___</td><td>___</td></tr></tbody></table>
+            </div>
+            <div class="card"><h3>Accounts Receivable Aging</h3>
+                <table><thead><tr><th>Aging</th><th>Amount</th><th>% of Total</th></tr></thead>
+                <tbody><tr><td>Current (0-30)</td><td>$___</td><td>___%</td></tr><tr><td>31-60 Days</td><td>$___</td><td>___%</td></tr><tr><td>61-90 Days</td><td>$___</td><td>___%</td></tr><tr><td>90+ Days</td><td>$___</td><td>___%</td></tr><tr style="font-weight: bold;"><td>TOTAL A/R</td><td>$___</td><td>100%</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <div class="two-column" style="margin-top: 16px;">
+            <div class="card"><h3>Accounts Payable Status</h3>
+                <table><thead><tr><th>Vendor</th><th>Amount Due</th><th>Due Date</th><th>Status</th></tr></thead>
+                <tbody><tr><td>Fuel Supplier</td><td>$___</td><td>[Date]</td><td><span class="status-badge status-green">Current</span></td></tr><tr><td>Key Vendor 1</td><td>$___</td><td>[Date]</td><td><span class="status-badge status-green">Current</span></td></tr><tr><td>Key Vendor 2</td><td>$___</td><td>[Date]</td><td><span class="status-badge status-yellow">Watch</span></td></tr><tr style="font-weight: bold;"><td>TOTAL A/P</td><td>$___</td><td></td><td></td></tr></tbody></table>
+            </div>
+            <div class="card"><h3>Capital Expenditures</h3>
+                <table><thead><tr><th>Project</th><th>Budget</th><th>Spent</th><th>Status</th></tr></thead>
+                <tbody><tr><td>[Project 1]</td><td>$___</td><td>$___</td><td><span class="status-badge status-green">On Track</span></td></tr><tr><td>[Project 2]</td><td>$___</td><td>$___</td><td><span class="status-badge status-yellow">Watch</span></td></tr><tr style="font-weight: bold;"><td>TOTAL CAPEX</td><td>$___</td><td>$___</td><td></td></tr></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 5: PEOPLE & OPERATIONS -->
+    <div class="page" id="page5">
+        <div class="section-header">
+            <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+            <div><h2>People & Operations</h2><div class="subtitle">Staffing, Compliance & Strategic Initiatives</div></div>
+        </div>
+
+        <div class="two-column">
+            <div class="card"><h3>Staffing Overview</h3>
+                <table><thead><tr><th>Metric</th><th>This Mo</th><th>Last Mo</th><th>Budget</th></tr></thead>
+                <tbody><tr><td>Total Headcount</td><td>___</td><td>___</td><td>___</td></tr><tr><td>Full-Time</td><td>___</td><td>___</td><td>___</td></tr><tr><td>Part-Time</td><td>___</td><td>___</td><td>___</td></tr><tr><td>Open Positions</td><td>___</td><td>___</td><td>___</td></tr></tbody></table>
+            </div>
+            <div class="card"><h3>Labor Efficiency</h3>
+                <table><thead><tr><th>Metric</th><th>This Mo</th><th>Last Mo</th><th>Target</th></tr></thead>
+                <tbody><tr><td>Total Labor Cost</td><td>$___</td><td>$___</td><td>$___</td></tr><tr><td>Labor % of Revenue</td><td>___%</td><td>___%</td><td>___%</td></tr><tr><td>Labor % of Gross Profit</td><td>___%</td><td>___%</td><td>___%</td></tr><tr><td>Revenue per Labor Hour</td><td>$___</td><td>$___</td><td>$___</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <div class="two-column" style="margin-top: 16px;">
+            <div class="card"><h3>Indigenous Employment</h3>
+                <div class="donut-container">
+                    <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke="#E2E8F0" stroke-width="8"/><circle cx="40" cy="40" r="32" fill="none" stroke="#0077B6" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="50" transform="rotate(-90 40 40)" stroke-linecap="round"/><text x="40" y="45" text-anchor="middle" font-size="14" font-weight="700" fill="#1E293B">75%</text></svg>
+                    <div class="donut-stats"><div><div class="label">Indigenous Employees</div><div class="value">___</div></div><div><div class="label">In Leadership</div><div class="value primary">___</div></div><div><div class="label">Target</div><div class="value">___%</div></div></div>
+                </div>
+            </div>
+            <div class="card"><h3>Safety & Incidents</h3>
+                <table><thead><tr><th>Metric</th><th>This Mo</th><th>Last Mo</th><th>YTD</th></tr></thead>
+                <tbody><tr><td>Workplace Injuries</td><td>___</td><td>___</td><td>___</td></tr><tr><td>Lost Time Incidents</td><td>___</td><td>___</td><td>___</td></tr><tr><td>Near Misses</td><td>___</td><td>___</td><td>___</td></tr><tr><td>Security Incidents</td><td>___</td><td>___</td><td>___</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <div class="card" style="margin: 16px 0;"><h3>Equipment & Facility Status</h3>
+            <div class="equipment-grid">
+                <div class="equipment-item"><span class="indicator green"></span><div class="name">Fuel Pumps</div><div class="status">Operational</div></div>
+                <div class="equipment-item"><span class="indicator green"></span><div class="name">POS System</div><div class="status">Operational</div></div>
+                <div class="equipment-item"><span class="indicator green"></span><div class="name">Refrigeration</div><div class="status">Operational</div></div>
+                <div class="equipment-item"><span class="indicator yellow"></span><div class="name">HVAC</div><div class="status">Monitor</div></div>
+                <div class="equipment-item"><span class="indicator green"></span><div class="name">Signage</div><div class="status">Operational</div></div>
+                <div class="equipment-item"><span class="indicator green"></span><div class="name">Security</div><div class="status">Operational</div></div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+            <div><h2>Strategic Initiatives</h2><div class="subtitle">Little Tree Pay & Growth Projects</div></div>
+        </div>
+
+        <div class="two-column">
+            <div class="card"><h3>Little Tree Pay Integration</h3>
+                <table><thead><tr><th>Milestone</th><th>Target</th><th>Status</th></tr></thead>
+                <tbody><tr><td>[Milestone 1]</td><td>[Date]</td><td><span class="status-badge status-green">On Track</span></td></tr><tr><td>[Milestone 2]</td><td>[Date]</td><td><span class="status-badge status-yellow">Watch</span></td></tr><tr><td>[Milestone 3]</td><td>[Date]</td><td><span class="status-badge status-green">On Track</span></td></tr></tbody></table>
+                <div class="lt-pay-stats"><div class="lt-pay-stat"><div class="label">Transactions</div><div class="value">___</div></div><div class="lt-pay-stat"><div class="label">Volume</div><div class="value">$___</div></div><div class="lt-pay-stat"><div class="label">Adoption</div><div class="value">___%</div></div></div>
+            </div>
+            <div class="card"><h3>Forward Look - Next Month</h3>
+                <table><thead><tr><th>Metric</th><th>Forecast</th><th>Confidence</th></tr></thead>
+                <tbody><tr><td>Total Revenue</td><td>$___</td><td>High</td></tr><tr><td>Fuel Volume</td><td>___ L</td><td>Medium</td></tr><tr><td>Cash Position</td><td>$___</td><td>High</td></tr></tbody></table>
+                <h4 style="font-size: 13px; font-weight: 600; margin: 14px 0 10px;">Known Risks</h4>
+                <table><thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th></tr></thead>
+                <tbody><tr><td>[Risk 1]</td><td>Med</td><td>High</td></tr><tr><td>[Risk 2]</td><td>Low</td><td>Med</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <div class="key-ratios"><h3>Key Ratios Dashboard</h3>
+            <div class="ratios-grid">
+                <div class="ratio-card"><div class="value">___¢</div><div class="metric">Fuel Margin/L</div><div class="note">Small changes swing everything</div></div>
+                <div class="ratio-card"><div class="value">$___</div><div class="metric">C-Store/Fuel Transaction</div><div class="note">Measures upsell capture</div></div>
+                <div class="ratio-card"><div class="value">___%</div><div class="metric">Labor % of Gross Profit</div><div class="note">Efficiency indicator</div></div>
+                <div class="ratio-card"><div class="value">___ days</div><div class="metric">Cash Conversion Cycle</div><div class="note">Inventory to cash speed</div></div>
+                <div class="ratio-card"><div class="value">___%</div><div class="metric">Shrinkage Rate</div><div class="note">Silent profit killer</div></div>
+                <div class="ratio-card"><div class="value">___%</div><div class="metric">Tax-Exempt Fuel %</div><div class="note">Competitive advantage</div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPage(num) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById('page' + num).classList.add('active');
+            document.querySelectorAll('.nav button')[num - 1].classList.add('active');
+        }
+    </script>
+</body>
+</html>
